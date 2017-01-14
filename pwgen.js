@@ -2,6 +2,7 @@
  * pwgen.js
  *
  * Copyright (C) 2003-2006 KATO Kazuyoshi <kzys@8-p.info>
+ * Updates by Frank4DD (C) 2010; by BoinJJ 2017
  *
  * This program is a JavaScript port of pwgen.
  * The original C source code written by Theodore Ts'o.
@@ -11,13 +12,15 @@
  * Public License.
  */
 
-var PWGen = function () {
-    this.maxLength = 8
-    this.includeCapitalLetter = true
-    this.includeNumber = true
+var PWGen = function() {
+	this.maxLength = 8;
+	this.includeCapitalLetter = false;
+	this.includeNumber = false;
+    this.includeSpecial = false;
 }
 
 PWGen.prototype = {
+    
     generate0: function() {
         var result = "";
         var prev = 0;
@@ -32,6 +35,10 @@ PWGen.prototype = {
             requested |= this.INCLUDE_NUMBER;
         }
         
+        if (this.includeSpecial) {
+            requested |= this.INCLUDE_SPECIAL;
+        }
+        
         var shouldBe = (Math.random() < 0.5) ? this.VOWEL : this.CONSONANT;
         
         while (result.length < this.maxLength) {
@@ -40,7 +47,7 @@ PWGen.prototype = {
             flags = this.ELEMENTS[i][1];
 
             /* Filter on the basic type of the next element */
-            if ((flags & shouldBe) === 0)
+            if ((flags & shouldBe) == 0)
                 continue;
             /* Handle the NOT_FIRST flag */
             if (isFirst && (flags & this.NOT_FIRST))
@@ -49,7 +56,7 @@ PWGen.prototype = {
             if ((prev & this.VOWEL) && (flags & this.VOWEL) && (flags & this.DIPTHONG))
                 continue;
             /* Don't allow us to overflow the buffer */
-            if (result.length + str.length > this.maxLength)
+            if ( (result.length + str.length) > this.maxLength)
                 continue;
             
             
@@ -67,13 +74,11 @@ PWGen.prototype = {
              */
             result += str;
             
-            /* Time to stop? */
-            if (result.length >= this.maxLength) {
-                break;
-            }
             
             if (requested & this.INCLUDE_NUMBER) {
                 if (!isFirst && (Math.random() < 0.3)) {
+                    if ( (result.length + str.length) > this.maxLength)
+                        result = result.slice(0,-1);
                     result += Math.floor(10 * Math.random()).toString();
                     requested &= ~this.INCLUDE_NUMBER;
                     
@@ -84,10 +89,26 @@ PWGen.prototype = {
                 }
             }
             
+
+            if (requested & this.INCLUDE_SPECIAL) {
+                if (!isFirst && (Math.random() < 0.3)) {
+                    if ( (result.length + str.length) > this.maxLength)
+                        result = result.slice(0,-1);
+                var possible = "!@#$^*()-_+?=./:',";
+                result += possible.charAt(Math.floor(Math.random() * possible.length));
+                requested &= ~this.INCLUDE_SPECIAL;
+
+                    isFirst = true;
+                    prev = 0;
+                    shouldBe = (Math.random() < 0.5) ? this.VOWEL : this.CONSONANT;
+                    continue;
+                }
+            }
+
             /*
              * OK, figure out what the next element should be
              */
-            if (shouldBe === this.CONSONANT) {
+            if (shouldBe == this.CONSONANT) {
                 shouldBe = this.VOWEL;
             } else { /* should_be == VOWEL */
                 if ((prev & this.VOWEL) ||
@@ -101,7 +122,7 @@ PWGen.prototype = {
             isFirst = false;
         }
         
-        if (requested & (this.INCLUDE_NUMBER | this.INCLUDE_CAPITAL_LETTER))
+        if (requested & (this.INCLUDE_NUMBER | this.INCLUDE_SPECIAL | this.INCLUDE_CAPITAL_LETTER))
             return null;
         
         return result;
@@ -117,6 +138,7 @@ PWGen.prototype = {
     },
 
     INCLUDE_NUMBER: 1,
+    INCLUDE_SPECIAL: 1 << 1 << 1,
     INCLUDE_CAPITAL_LETTER: 1 << 1,
 
     CONSONANT: 1,
@@ -167,5 +189,3 @@ PWGen.prototype.ELEMENTS = [
     [ "y",  PWGen.prototype.CONSONANT ],
     [ "z",  PWGen.prototype.CONSONANT ],
 ];
-    
-module.exports = PWGen;
