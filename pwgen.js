@@ -16,7 +16,7 @@ var PWGen = function() {
 	this.maxLength = 8;
 	this.includeCapitalLetter = false;
 	this.includeNumber = false;
-    this.includeSpecial = false;
+	this.includeSpecial = false;
 }
 
 PWGen.prototype = {
